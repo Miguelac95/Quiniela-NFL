@@ -1,504 +1,918 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiniela NFL Playoffs</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiniela NFL Playoffs 2026 — Bracket</title>
+  <style>
+    :root { --bd:#e5e7eb; --bg:#fafafa; --tx:#111827; --mut:#6b7280; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; color:var(--tx); background:var(--bg); }
+    .wrap { max-width: 1050px; margin: 24px auto; padding: 0 14px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 12px 0 6px; }
+    h1 { font-size: 18px; margin:0; }
+    .muted { color: var(--mut); }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .card { background:white; border:1px solid var(--bd); border-radius:14px; padding:14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .card h2 { margin:0 0 10px; font-size: 16px; }
+    .card h3 { margin:0 0 10px; font-size: 14px; }
+    .card p { margin: 8px 0; }
+    input, select, button { font: inherit; }
+    input, select { padding: 9px 10px; border-radius:10px; border:1px solid var(--bd); width: 100%; }
+    button { padding: 9px 12px; border-radius:10px; border:1px solid var(--bd); background:#111827; color:white; cursor:pointer; }
+    button.secondary { background:white; color:#111827; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .nav { display:flex; gap:8px; flex-wrap:wrap; padding: 10px 0 16px; }
+    .nav button { background:white; color:#111827; }
+    .nav button.active { background:#111827; color:white; }
+    .grid { display:grid; gap:12px; }
+    @media (min-width: 980px) {
+      .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+      .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .small { font-size: 12px; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding: 4px 10px; border-radius:999px; border:1px solid var(--bd); background:white; font-size:12px; }
+    .pill.ok { border-color:#bbf7d0; background:#f0fdf4; color:#166534; }
+    .pill.bad { border-color:#fecaca; background:#fef2f2; color:#991b1b; }
+    .match { border:1px solid var(--bd); border-radius:12px; padding:10px; background:white; }
+    .match .top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .match .teams { display:grid; gap:8px; margin-top:10px; }
+    .teamBtn { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; border-radius:12px; border:1px solid var(--bd); background:white; cursor:pointer; text-align:left; }
+    .teamBtn strong { font-size: 13px; }
+    .teamBtn span { font-size: 12px; color: var(--mut); }
+    .teamBtn.selected { border-color:#93c5fd; background:#eff6ff; }
+    .teamBtn:disabled { opacity:.6; cursor:not-allowed; }
+    .colsBracket { display:grid; gap:12px; }
+    @media (min-width: 980px) {
+      .colsBracket { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    }
+    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #111827; color: white; padding: 10px 12px; border-radius: 12px; display:none; max-width: 92vw; }
+    a { color: inherit; }
+    .divider { height:1px; background: var(--bd); margin: 10px 0; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Quiniela NFL Playoffs 2026 — Bracket</h1>
+        <div class="muted small">Un solo archivo HTML + Supabase (Auth/DB/RLS). Bracket con reseeding real.</div>
+      </div>
+      <div id="userBox" class="row" style="align-items:center; justify-content:flex-end;"></div>
+    </header>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <div id="app"></div>
+  </div>
 
-        // Iconos SVG simples
-        const Trophy = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-                <path d="M4 22h16"></path>
-                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-            </svg>
-        );
+  <div id="toast" class="toast"></div>
 
-        const Users = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-        );
+  <!-- Supabase JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        const Plus = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-        );
+  <script>
+    /***********************************************************************
+     * CONFIG — REEMPLAZA ESTO
+     **********************************************************************/
+    const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+    const SUPABASE_ANON_KEY = "TU_ANON_KEY";
 
-        const Trash = () => (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            </svg>
-        );
+    // Temporada objetivo
+    const SEASON = 2026;
 
-        const Award = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="8" r="7"></circle>
-                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-            </svg>
-        );
+    /***********************************************************************
+     * DB expected tables (mínimo):
+     * - pools(id, name, season, admin_user_id, created_at)
+     * - teams(id, season, conference, abbrev, name)
+     * - seeds(id, season, conference, seed, team_id)
+     * - entries(id, pool_id, user_id, display_name, created_at)
+     * - games(id, season, conference, round, game_no, kickoff_at, home_seed, away_seed)
+     * - picks(id, entry_id, game_id, winner_team_id)
+     *
+     * RLS recomendado: bloquear writes a picks cuando now() >= kickoff_at.
+     **********************************************************************/
 
-        const Check = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-        );
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const Edit = () => (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-        );
+    const $ = (sel) => document.querySelector(sel);
+    const el = (tag, attrs={}, children=[]) => {
+      const n = document.createElement(tag);
+      for (const [k,v] of Object.entries(attrs)) {
+        if (k === "class") n.className = v;
+        else if (k === "html") n.innerHTML = v;
+        else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2).toLowerCase(), v);
+        else n.setAttribute(k, v);
+      }
+      (Array.isArray(children) ? children : [children]).forEach(c => {
+        if (c == null) return;
+        if (typeof c === "string") n.appendChild(document.createTextNode(c));
+        else n.appendChild(c);
+      });
+      return n;
+    };
 
-        const NFLPlayoffBracket = () => {
-            const [players, setPlayers] = useState([]);
-            const [newPlayerName, setNewPlayerName] = useState('');
-            const [view, setView] = useState('leaderboard');
-            const [games, setGames] = useState({});
-            const [predictions, setPredictions] = useState({});
+    function toast(msg) {
+      const t = $("#toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(toast._to);
+      toast._to = setTimeout(() => t.style.display = "none", 3200);
+    }
 
-            const rounds = [
-                { id: 'wildcard', name: 'Wild Card', games: 6 },
-                { id: 'divisional', name: 'Divisional', games: 4 },
-                { id: 'conference', name: 'Conference', games: 2 },
-                { id: 'superbowl', name: 'Super Bowl', games: 1 }
-            ];
+    function fmtDate(ts) {
+      try { return new Date(ts).toLocaleString("es-MX"); } catch { return String(ts); }
+    }
 
-            useEffect(() => {
-                loadData();
-            }, []);
+    function isLocked(kickoffAt) {
+      return new Date(kickoffAt).getTime() <= Date.now();
+    }
 
-            const loadData = () => {
-                try {
-                    const savedPlayers = localStorage.getItem('nfl-players');
-                    const savedGames = localStorage.getItem('nfl-games');
-                    const savedPredictions = localStorage.getItem('nfl-predictions');
+    async function getUser() {
+      const { data } = await supabase.auth.getUser();
+      return data.user || null;
+    }
 
-                    if (savedPlayers) setPlayers(JSON.parse(savedPlayers));
-                    if (savedGames) setGames(JSON.parse(savedGames));
-                    if (savedPredictions) setPredictions(JSON.parse(savedPredictions));
-                } catch (error) {
-                    console.log('Iniciando datos nuevos');
-                }
-            };
+    /***********************************************************************
+     * STATE
+     **********************************************************************/
+    const state = {
+      user: null,
+      view: "pools", // pools | play | admin
+      pools: [],
+      currentPool: null,
+      entry: null,
+      seeds: null,         // { AFC: {1: teamObj, ...}, NFC: {...} }
+      games: [],           // list
+      picksByGame: {},     // { gameId: teamId }
+      teamsById: {},       // teamId -> teamObj
+    };
 
-            const saveData = (newPlayers, newGames, newPredictions) => {
-                try {
-                    localStorage.setItem('nfl-players', JSON.stringify(newPlayers));
-                    localStorage.setItem('nfl-games', JSON.stringify(newGames));
-                    localStorage.setItem('nfl-predictions', JSON.stringify(newPredictions));
-                } catch (error) {
-                    console.error('Error guardando datos:', error);
-                }
-            };
+    /***********************************************************************
+     * LOADERS
+     **********************************************************************/
+    async function loadPools() {
+      const { data, error } = await supabase
+        .from("pools")
+        .select("*")
+        .eq("season", SEASON)
+        .order("created_at", { ascending: false });
 
-            const addPlayer = () => {
-                if (newPlayerName.trim()) {
-                    const newPlayers = [...players, { id: Date.now(), name: newPlayerName.trim() }];
-                    setPlayers(newPlayers);
-                    saveData(newPlayers, games, predictions);
-                    setNewPlayerName('');
-                }
-            };
+      if (error) throw error;
+      state.pools = data || [];
+    }
 
-            const removePlayer = (playerId) => {
-                const newPlayers = players.filter(p => p.id !== playerId);
-                setPlayers(newPlayers);
+    async function loadSeedsAndTeams() {
+      const { data: teams, error: tErr } = await supabase
+        .from("teams")
+        .select("*")
+        .eq("season", SEASON);
 
-                const newPredictions = { ...predictions };
-                Object.keys(newPredictions).forEach(key => {
-                    if (newPredictions[key]?.[playerId]) {
-                        delete newPredictions[key][playerId];
-                    }
-                });
-                setPredictions(newPredictions);
-                saveData(newPlayers, games, newPredictions);
-            };
+      if (tErr) throw tErr;
 
-            const updateGame = (roundId, gameIndex, field, value) => {
-                const key = `${roundId}-${gameIndex}`;
-                const newGames = { ...games };
+      state.teamsById = {};
+      for (const t of teams || []) state.teamsById[t.id] = t;
 
-                if (!newGames[key]) {
-                    newGames[key] = { team1: '', team2: '', winner: null };
-                }
+      const { data: seeds, error: sErr } = await supabase
+        .from("seeds")
+        .select("conference, seed, team_id")
+        .eq("season", SEASON);
 
-                newGames[key][field] = value;
-                setGames(newGames);
-                saveData(players, newGames, predictions);
-            };
+      if (sErr) throw sErr;
 
-            const setPrediction = (roundId, gameIndex, playerId, teamChoice) => {
-                const key = `${roundId}-${gameIndex}`;
-                const newPredictions = { ...predictions };
+      const map = { AFC: {}, NFC: {} };
+      for (const r of seeds || []) {
+        map[r.conference][r.seed] = state.teamsById[r.team_id];
+      }
+      state.seeds = map;
+    }
 
-                if (!newPredictions[key]) {
-                    newPredictions[key] = {};
-                }
+    async function loadGames() {
+      const { data, error } = await supabase
+        .from("games")
+        .select("*")
+        .eq("season", SEASON)
+        .order("round", { ascending: true })
+        .order("conference", { ascending: true })
+        .order("game_no", { ascending: true });
 
-                newPredictions[key][playerId] = teamChoice;
-                setPredictions(newPredictions);
-                saveData(players, games, newPredictions);
-            };
+      if (error) throw error;
+      state.games = data || [];
+    }
 
-            const calculateScore = (playerId) => {
-                let score = 0;
-                Object.keys(games).forEach(key => {
-                    const game = games[key];
-                    const prediction = predictions[key]?.[playerId];
+    async function loadEntry(poolId) {
+      const user = await getUser();
+      if (!user) return;
 
-                    if (game.winner !== null && prediction === game.winner) {
-                        score++;
-                    }
-                });
-                return score;
-            };
+      const { data, error } = await supabase
+        .from("entries")
+        .select("*")
+        .eq("pool_id", poolId)
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-            const getLeaderboard = () => {
-                return players
-                    .map(player => ({
-                        ...player,
-                        score: calculateScore(player.id)
-                    }))
-                    .sort((a, b) => b.score - a.score);
-            };
+      if (error) throw error;
+      state.entry = data || null;
+    }
 
-            const resetAll = () => {
-                if (window.confirm('¿Estás seguro de que quieres resetear toda la quiniela?')) {
-                    setPlayers([]);
-                    setGames({});
-                    setPredictions({});
-                    localStorage.clear();
-                }
-            };
+    async function loadPicks(entryId) {
+      if (!entryId) { state.picksByGame = {}; return; }
 
-            const leaderboard = getLeaderboard();
+      const { data, error } = await supabase
+        .from("picks")
+        .select("game_id, winner_team_id")
+        .eq("entry_id", entryId);
 
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
-                    <div className="max-w-7xl mx-auto">
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <div className="flex items-center justify-center gap-3 mb-2">
-                                <div className="text-yellow-400"><Trophy /></div>
-                                <h1 className="text-4xl md:text-5xl font-bold text-white">
-                                    Quiniela NFL Playoffs
-                                </h1>
-                            </div>
-                            <p className="text-blue-200 text-lg">
-                                Configura partidos, haz predicciones y compite
-                            </p>
-                        </div>
+      if (error) throw error;
 
-                        {/* Navigation */}
-                        <div className="flex gap-2 mb-6 overflow-x-auto">
-                            <button
-                                onClick={() => setView('leaderboard')}
-                                className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                                    view === 'leaderboard'
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
-                                }`}
-                            >
-                                <Award />
-                                Tabla de Posiciones
-                            </button>
-                            <button
-                                onClick={() => setView('results')}
-                                className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                                    view === 'results'
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
-                                }`}
-                            >
-                                <Check />
-                                Resultados Reales
-                            </button>
-                            <button
-                                onClick={() => setView('predictions')}
-                                className={`px-6 py-3 rounded-lg font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                                    view === 'predictions'
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
-                                }`}
-                            >
-                                <Edit />
-                                Predicciones
-                            </button>
-                        </div>
+      const map = {};
+      for (const p of data || []) map[p.game_id] = p.winner_team_id;
+      state.picksByGame = map;
+    }
 
-                        {/* Añadir jugadores */}
-                        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
-                            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                                <Users />
-                                Jugadores
-                            </h2>
+    /***********************************************************************
+     * BRACKET LOGIC (NFL reseeding)
+     **********************************************************************/
 
-                            <div className="flex gap-2 mb-4">
-                                <input
-                                    type="text"
-                                    value={newPlayerName}
-                                    onChange={(e) => setNewPlayerName(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-                                    placeholder="Nombre del jugador..."
-                                    className="flex-1 px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                />
-                                <button
-                                    onClick={addPlayer}
-                                    className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold flex items-center gap-2 transition"
-                                >
-                                    <Plus />
-                                    Añadir
-                                </button>
-                            </div>
+    // Helper: get WC games for a conf: by seeds 2v7,3v6,4v5 (stored in games table)
+    function wcGames(conf) {
+      return state.games.filter(g => g.round === "WC" && g.conference === conf)
+        .sort((a,b) => a.game_no - b.game_no);
+    }
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {players.map(player => (
-                                    <div
-                                        key={player.id}
-                                        className="p-3 rounded-lg bg-white/20 text-white flex items-center justify-between"
-                                    >
-                                        <span className="font-semibold">{player.name}</span>
-                                        <button
-                                            onClick={() => removePlayer(player.id)}
-                                            className="p-1 hover:bg-red-500 rounded"
-                                        >
-                                            <Trash />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+    function divGames(conf) {
+      return state.games.filter(g => g.round === "DIV" && g.conference === conf)
+        .sort((a,b) => a.game_no - b.game_no);
+    }
 
-                            {players.length === 0 && (
-                                <p className="text-white/60 text-center py-4">
-                                    Añade jugadores para comenzar
-                                </p>
-                            )}
-                        </div>
+    function confGame(conf) {
+      return state.games.find(g => g.round === "CONF" && g.conference === conf) || null;
+    }
 
-                        {/* Vista de Tabla de Posiciones */}
-                        {view === 'leaderboard' && players.length > 0 && (
-                            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
-                                <h2 className="text-2xl font-bold text-white mb-4">
-                                    Tabla de Posiciones
-                                </h2>
+    function sbGame() {
+      return state.games.find(g => g.round === "SB") || null;
+    }
 
-                                <div className="space-y-2">
-                                    {leaderboard.map((player, index) => (
-                                        <div
-                                            key={player.id}
-                                            className={`flex items-center justify-between p-4 rounded-lg ${
-                                                index === 0
-                                                    ? 'bg-yellow-500/30 border-2 border-yellow-400'
-                                                    : 'bg-white/10'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl font-bold text-white w-8">
-                                                    {index + 1}°
-                                                </span>
-                                                <span className="text-xl font-semibold text-white">
-                                                    {player.name}
-                                                </span>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-3xl font-bold text-white">
-                                                    {player.score}
-                                                </div>
-                                                <div className="text-sm text-white/70">
-                                                    {player.score === 1 ? 'acierto' : 'aciertos'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+    function seedTeam(conf, seedNum) {
+      return state.seeds?.[conf]?.[seedNum] || null;
+    }
 
-                        {/* Vista de Resultados Reales */}
-                        {view === 'results' && (
-                            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
-                                <h2 className="text-2xl font-bold text-white mb-4">
-                                    Registrar Resultados Reales
-                                </h2>
+    // WC matchup teams from seeds (fixed)
+    function wcMatchTeams(game) {
+      const home = seedTeam(game.conference, game.home_seed);
+      const away = seedTeam(game.conference, game.away_seed);
+      return { home, away };
+    }
 
-                                {rounds.map(round => (
-                                    <div key={round.id} className="mb-6">
-                                        <h3 className="text-xl font-bold text-white mb-3 border-b border-white/30 pb-2">
-                                            {round.name}
-                                        </h3>
+    // Get WC winners as array of { seed, team }
+    function wcWinners(conf) {
+      const games = wcGames(conf);
+      const winners = [];
+      for (const g of games) {
+        const winnerTeamId = state.picksByGame[g.id];
+        if (!winnerTeamId) continue;
+        const team = state.teamsById[winnerTeamId];
+        // find seed for that team (from seeds map)
+        let foundSeed = null;
+        for (const [s, t] of Object.entries(state.seeds?.[conf] || {})) {
+          if (t && t.id === winnerTeamId) { foundSeed = Number(s); break; }
+        }
+        if (foundSeed != null) winners.push({ seed: foundSeed, team });
+      }
+      return winners;
+    }
 
-                                        <div className="space-y-4">
-                                            {Array.from({ length: round.games }, (_, i) => {
-                                                const key = `${round.id}-${i}`;
-                                                const game = games[key] || { team1: '', team2: '', winner: null };
+    // Compute Divisional matchups based on winners (reseeding):
+    // Remaining teams: seed 1, seed 2, and 3 WC winners.
+    // Lowest remaining seed number is "best" (1), highest number is "worst".
+    // #1 plays the WORST seed (highest number) among remaining (seed2 + WC winners)
+    // #2 plays the remaining WORST among remaining two WC winners.
+    function computeDivisionalMatchups(conf) {
+      const winners = wcWinners(conf);
+      if (winners.length < 3) return null;
 
-                                                return (
-                                                    <div key={i} className="bg-white/10 rounded-lg p-4">
-                                                        <div className="text-sm text-white/70 mb-2">Juego {i + 1}</div>
+      const one = { seed: 1, team: seedTeam(conf, 1) };
+      const two = { seed: 2, team: seedTeam(conf, 2) };
 
-                                                        <div className="grid md:grid-cols-3 gap-3">
-                                                            <input
-                                                                type="text"
-                                                                value={game.team1}
-                                                                onChange={(e) => updateGame(round.id, i, 'team1', e.target.value)}
-                                                                placeholder="Equipo 1"
-                                                                className="px-3 py-2 rounded bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                                            />
+      const remaining = [two, ...winners]; // candidates for seed1 opponent include seed2 + WC winners
+      // worst seed = highest seed number
+      remaining.sort((a,b) => b.seed - a.seed);
+      const opp1 = remaining[0];
 
-                                                            <input
-                                                                type="text"
-                                                                value={game.team2}
-                                                                onChange={(e) => updateGame(round.id, i, 'team2', e.target.value)}
-                                                                placeholder="Equipo 2"
-                                                                className="px-3 py-2 rounded bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                                            />
+      // others (excluding opp1) are for seed2's game: pick worst among them
+      const rest = remaining.slice(1);
+      rest.sort((a,b) => b.seed - a.seed);
+      const opp2 = rest[0];
 
-                                                            <div className="flex gap-2">
-                                                                <button
-                                                                    onClick={() => updateGame(round.id, i, 'winner', 1)}
-                                                                    disabled={!game.team1}
-                                                                    className={`flex-1 px-3 py-2 rounded font-semibold transition ${
-                                                                        game.winner === 1
-                                                                            ? 'bg-green-500 text-white'
-                                                                            : 'bg-white/20 text-white hover:bg-white/30'
-                                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                >
-                                                                    Ganó 1
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => updateGame(round.id, i, 'winner', 2)}
-                                                                    disabled={!game.team2}
-                                                                    className={`flex-1 px-3 py-2 rounded font-semibold transition ${
-                                                                        game.winner === 2
-                                                                            ? 'bg-green-500 text-white'
-                                                                            : 'bg-white/20 text-white hover:bg-white/30'
-                                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                >
-                                                                    Ganó 2
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+      // last team is the leftover (from rest)
+      const leftover = rest[1];
 
-                        {/* Vista de Predicciones */}
-                        {view === 'predictions' && (
-                            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/20">
-                                <h2 className="text-2xl font-bold text-white mb-4">
-                                    Hacer Predicciones
-                                </h2>
+      return [
+        { matchupNo: 1, home: one, away: opp1 },              // seed 1 home
+        { matchupNo: 2, home: two, away: opp2 || leftover }   // seed 2 home
+      ];
+    }
 
-                                {players.length === 0 && (
-                                    <p className="text-white/60 text-center py-8">
-                                        Añade jugadores primero
-                                    </p>
-                                )}
+    // Conference matchups: winners of two divisional games
+    function divisionalWinners(conf) {
+      const games = divGames(conf);
+      // We'll use actual DIV game records to store picks; but matchups are computed
+      const winners = [];
+      for (const g of games) {
+        const winnerId = state.picksByGame[g.id];
+        if (!winnerId) continue;
+        winners.push(state.teamsById[winnerId]);
+      }
+      return winners;
+    }
 
-                                {players.map(player => (
-                                    <div key={player.id} className="mb-8">
-                                        <h3 className="text-xl font-bold text-white mb-4 bg-blue-500/30 p-3 rounded-lg">
-                                            Predicciones de {player.name}
-                                        </h3>
+    function conferenceWinner(conf) {
+      const g = confGame(conf);
+      if (!g) return null;
+      const winnerId = state.picksByGame[g.id];
+      return winnerId ? state.teamsById[winnerId] : null;
+    }
 
-                                        {rounds.map(round => (
-                                            <div key={round.id} className="mb-6">
-                                                <h4 className="text-lg font-semibold text-white mb-3 border-b border-white/20 pb-2">
-                                                    {round.name}
-                                                </h4>
+    /***********************************************************************
+     * WRITE OPS
+     **********************************************************************/
+    async function upsertPick(gameId, teamId) {
+      if (!state.entry) throw new Error("No entry");
+      const existing = state.picksByGame[gameId] || null;
 
-                                                <div className="space-y-3">
-                                                    {Array.from({ length: round.games }, (_, i) => {
-                                                        const key = `${round.id}-${i}`;
-                                                        const game = games[key] || { team1: '', team2: '' };
-                                                        const playerPrediction = predictions[key]?.[player.id];
+      // Optimistic UI
+      state.picksByGame[gameId] = teamId;
+      render();
 
-                                                        return (
-                                                            <div key={i} className="bg-white/10 rounded-lg p-3">
-                                                                <div className="text-sm text-white/70 mb-2">Juego {i + 1}</div>
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={() => setPrediction(round.id, i, player.id, 1)}
-                                                                        disabled={!game.team1}
-                                                                        className={`flex-1 px-4 py-2 rounded font-semibold transition ${
-                                                                            playerPrediction === 1
-                                                                                ? 'bg-blue-500 text-white'
-                                                                                : 'bg-white/20 text-white hover:bg-white/30'
-                                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                    >
-                                                                        {game.team1 || 'Equipo 1'}
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setPrediction(round.id, i, player.id, 2)}
-                                                                        disabled={!game.team2}
-                                                                        className={`flex-1 px-4 py-2 rounded font-semibold transition ${
-                                                                            playerPrediction === 2
-                                                                                ? 'bg-blue-500 text-white'
-                                                                                : 'bg-white/20 text-white hover:bg-white/30'
-                                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                    >
-                                                                        {game.team2 || 'Equipo 2'}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+      const { error } = await supabase
+        .from("picks")
+        .upsert([{ entry_id: state.entry.id, game_id: gameId, winner_team_id: teamId }], { onConflict: "entry_id,game_id" });
 
-                        {/* Botón de reset */}
-                        <div className="text-center">
-                            <button
-                                onClick={resetAll}
-                                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition"
-                            >
-                                Resetear Todo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+      if (error) {
+        // rollback
+        if (existing) state.picksByGame[gameId] = existing;
+        else delete state.picksByGame[gameId];
+        render();
+        throw error;
+      }
 
-        ReactDOM.render(<NFLPlayoffBracket />, document.getElementById('root'));
-    </script>
+      // optional audit insert
+      await supabase.from("pick_audit").insert([{
+        entry_id: state.entry.id,
+        game_id: gameId,
+        old_team_id: existing,
+        new_team_id: teamId,
+        changed_by: state.user.id
+      }]).catch(() => { /* ignore if audit not present or RLS blocks */ });
+
+      toast("Pick guardado.");
+    }
+
+    // When a lower-round pick changes, clear downstream picks to keep bracket consistent
+    async function clearDownstream(conf, fromRound) {
+      if (!state.entry) return;
+
+      const roundOrder = { WC: 1, DIV: 2, CONF: 3, SB: 4 };
+      const min = roundOrder[fromRound] + 1;
+
+      const toDeleteIds = state.games
+        .filter(g => roundOrder[g.round] >= min)
+        .filter(g => g.round === "SB" || g.conference === conf)
+        .map(g => g.id);
+
+      if (!toDeleteIds.length) return;
+
+      // Update local
+      for (const gid of toDeleteIds) delete state.picksByGame[gid];
+      render();
+
+      const { error } = await supabase
+        .from("picks")
+        .delete()
+        .eq("entry_id", state.entry.id)
+        .in("game_id", toDeleteIds);
+
+      if (error) {
+        // if delete fails, reload picks from server to sync
+        await loadPicks(state.entry.id);
+        render();
+        throw error;
+      }
+    }
+
+    /***********************************************************************
+     * UI
+     **********************************************************************/
+    function renderUserBox() {
+      const box = $("#userBox");
+      box.innerHTML = "";
+
+      if (!state.user) return;
+
+      box.appendChild(el("span", { class:"pill ok" }, `Conectado: ${state.user.email}`));
+      box.appendChild(el("button", {
+        class: "secondary",
+        onclick: async () => { await supabase.auth.signOut(); }
+      }, "Salir"));
+    }
+
+    function nav() {
+      return el("div", { class:"nav" }, [
+        el("button", { class: state.view==="pools" ? "active": "", onclick: () => { state.view="pools"; render(); } }, "Pools"),
+        state.currentPool ? el("button", { class: state.view==="play" ? "active": "", onclick: () => { state.view="play"; render(); } }, "Mi bracket") : null,
+        state.currentPool ? el("button", { class: state.view==="admin" ? "active": "", onclick: () => { state.view="admin"; render(); } }, "Admin") : null,
+      ]);
+    }
+
+    function loginView() {
+      let sent = false;
+      const emailInput = el("input", { placeholder:"tu@email.com", type:"email" });
+      const sendBtn = el("button", { onclick: async () => {
+        const email = emailInput.value.trim();
+        if (!email) return toast("Escribe tu email.");
+        const { error } = await supabase.auth.signInWithOtp({ email });
+        if (error) return toast(error.message);
+        sent = true;
+        render();
+      } }, "Enviar link de acceso");
+
+      const wrap = el("div", { class:"card", style:"max-width:460px;margin: 40px auto;" }, [
+        el("h2", {}, "Inicia sesión"),
+        el("p", { class:"muted" }, "Te enviamos un link por correo (OTP)."),
+        emailInput,
+        el("div", { style:"height:10px" }),
+        sendBtn,
+        sent ? el("p", { class:"small muted" }, "Listo. Revisa tu correo (incluye spam/promociones).") : null,
+        el("div", { class:"divider" }),
+        el("p", { class:"small muted" },
+          "Nota: la anti-trampa real depende de RLS en Supabase. El frontend solo muestra/oculta controles.")
+      ]);
+      return wrap;
+    }
+
+    function poolsView() {
+      const poolList = el("div", { class:"card" }, [
+        el("h2", {}, "Pools (Playoffs NFL 2026)"),
+        el("p", { class:"muted small" }, "Abre un pool para crear tu entrada y llenar el bracket."),
+        ...state.pools.map(p => el("div", { class:"match" }, [
+          el("div", { class:"top" }, [
+            el("div", {}, [
+              el("div", {}, el("strong", {}, p.name)),
+              el("div", { class:"small muted" }, `Temporada: ${p.season} · Creado: ${fmtDate(p.created_at)}`)
+            ]),
+            el("button", { class:"secondary", onclick: async () => { await openPool(p.id); } }, "Abrir")
+          ])
+        ]))
+      ]);
+
+      const createName = el("input", { placeholder:"Nombre del pool (ej: Quiniela amigos)" });
+      const createBtn = el("button", { onclick: async () => {
+        const name = createName.value.trim();
+        if (!name) return toast("Ponle un nombre.");
+        const { error } = await supabase
+          .from("pools")
+          .insert([{ name, season: SEASON, admin_user_id: state.user.id }]);
+        if (error) return toast(error.message);
+        toast("Pool creado.");
+        await loadPools();
+        render();
+      } }, "Crear pool (serás admin)");
+
+      const createCard = el("div", { class:"card" }, [
+        el("h2", {}, "Crear pool"),
+        el("p", { class:"muted small" }, "El admin deberá cargar seeds y juegos (kickoff_at) en la sección Admin."),
+        createName,
+        el("div", { style:"height:10px" }),
+        createBtn
+      ]);
+
+      return el("div", { class:"grid cols-2" }, [poolList, createCard]);
+    }
+
+    function adminView() {
+      if (!state.currentPool) return el("div", { class:"card" }, "No hay pool abierto.");
+      const isAdmin = (state.currentPool.admin_user_id === state.user.id);
+
+      const base = el("div", { class:"card" }, [
+        el("h2", {}, "Admin"),
+        el("p", {}, [
+          el("span", {}, "Pool: "),
+          el("strong", {}, state.currentPool.name),
+          el("span", { class:"muted small" }, ` · id: ${state.currentPool.id}`)
+        ]),
+        !isAdmin ? el("p", { class:"pill bad" }, "No eres admin de este pool.") : el("p", { class:"pill ok" }, "Eres admin.")
+      ]);
+
+      if (!isAdmin) return base;
+
+      const note = el("div", { class:"card" }, [
+        el("h2", {}, "Qué debes cargar (una sola vez)"),
+        el("p", { class:"muted small" }, "Para que el bracket funcione, en Supabase debes tener:"),
+        el("ul", {}, [
+          el("li", {}, "teams (AFC/NFC)"),
+          el("li", {}, "seeds: 1..7 por conferencia"),
+          el("li", {}, "games: WC(3 por conf), DIV(2 por conf), CONF(1 por conf), SB(1) con kickoff_at"),
+          el("li", {}, "RLS: bloquear cambios cuando now() >= kickoff_at (anti-trampa real)")
+        ]),
+        el("p", { class:"muted small" }, "Este HTML no incluye formularios largos de administración para seeds/juegos porque suelen cargarse más fácil vía SQL/CSV. Si quieres, te hago una versión con panel admin completo (también en un solo HTML).")
+      ]);
+
+      const gamesCard = el("div", { class:"card" }, [
+        el("h2", {}, "Juegos detectados"),
+        el("p", { class:"muted small" }, "Verifica que existan los 13 juegos: WC(6) + DIV(4) + CONF(2) + SB(1)."),
+        el("div", { class:"small" }, state.games.length
+          ? el("ul", {}, state.games.map(g => el("li", {}, `${g.round} ${g.conference||""} #${g.game_no} · kickoff: ${fmtDate(g.kickoff_at)} · home_seed:${g.home_seed||"-"} away_seed:${g.away_seed||"-"}`)))
+          : el("div", { class:"pill bad" }, "No hay juegos cargados para esta temporada.")
+        )
+      ]);
+
+      return el("div", { class:"grid cols-2" }, [base, note, gamesCard]);
+    }
+
+    function entryCard() {
+      const card = el("div", { class:"card" }, [
+        el("h2", {}, "Mi entrada"),
+        el("p", { class:"muted small" }, "Crea tu entrada para poder guardar picks.")
+      ]);
+
+      if (!state.entry) {
+        const nameInput = el("input", { placeholder:"Nombre visible (ej: Miguel)" });
+        const btn = el("button", { onclick: async () => {
+          const display_name = (nameInput.value.trim() || "Participante");
+          const { data, error } = await supabase
+            .from("entries")
+            .insert([{ pool_id: state.currentPool.id, user_id: state.user.id, display_name }])
+            .select("*")
+            .single();
+          if (error) return toast(error.message);
+          state.entry = data;
+          await loadPicks(state.entry.id);
+          toast("Entrada creada.");
+          render();
+        } }, "Crear mi entrada");
+        card.appendChild(nameInput);
+        card.appendChild(el("div", { style:"height:10px" }));
+        card.appendChild(btn);
+      } else {
+        const nameInput = el("input", { value: state.entry.display_name });
+        const saveBtn = el("button", { class:"secondary", onclick: async () => {
+          const display_name = nameInput.value.trim() || "Participante";
+          const { error } = await supabase
+            .from("entries")
+            .update({ display_name })
+            .eq("id", state.entry.id);
+          if (error) return toast(error.message);
+          state.entry.display_name = display_name;
+          toast("Nombre actualizado.");
+        } }, "Guardar nombre");
+        card.appendChild(el("div", { class:"small muted" }, `ID: ${state.entry.id}`));
+        card.appendChild(el("div", { style:"height:10px" }));
+        card.appendChild(nameInput);
+        card.appendChild(el("div", { style:"height:10px" }));
+        card.appendChild(saveBtn);
+      }
+
+      return card;
+    }
+
+    function matchCard({ title, kickoffAt, teamA, teamB, selectedTeamId, onPick, locked }) {
+      const lockPill = locked
+        ? el("span", { class:"pill bad" }, "CERRADO")
+        : el("span", { class:"pill ok" }, "ABIERTO");
+
+      const top = el("div", { class:"top" }, [
+        el("div", {}, [
+          el("div", {}, el("strong", {}, title)),
+          el("div", { class:"small muted" }, `Kickoff: ${fmtDate(kickoffAt)}`)
+        ]),
+        lockPill
+      ]);
+
+      const btnA = el("button", {
+        class: "teamBtn" + (selectedTeamId === teamA?.id ? " selected" : ""),
+        disabled: locked || !teamA,
+        onclick: async () => onPick(teamA)
+      }, [
+        el("div", {}, [
+          el("strong", {}, teamA ? `${teamA.abbrev}` : "—"),
+          el("div", {}, el("span", {}, teamA ? teamA.name : "Sin definir"))
+        ]),
+        el("span", {}, selectedTeamId === teamA?.id ? "✔" : "")
+      ]);
+
+      const btnB = el("button", {
+        class: "teamBtn" + (selectedTeamId === teamB?.id ? " selected" : ""),
+        disabled: locked || !teamB,
+        onclick: async () => onPick(teamB)
+      }, [
+        el("div", {}, [
+          el("strong", {}, teamB ? `${teamB.abbrev}` : "—"),
+          el("div", {}, el("span", {}, teamB ? teamB.name : "Sin definir"))
+        ]),
+        el("span", {}, selectedTeamId === teamB?.id ? "✔" : "")
+      ]);
+
+      return el("div", { class:"match" }, [
+        top,
+        el("div", { class:"teams" }, [btnA, btnB])
+      ]);
+    }
+
+    function bracketColumn(conf, round) {
+      // round: WC | DIV | CONF
+      const col = el("div", { class:"card" }, [
+        el("h2", {}, `${conf} — ${round === "WC" ? "Wild Card" : round === "DIV" ? "Divisional" : "Conference"}`),
+      ]);
+
+      const games = round === "WC" ? wcGames(conf)
+        : round === "DIV" ? divGames(conf)
+        : round === "CONF" ? (confGame(conf) ? [confGame(conf)] : [])
+        : [];
+
+      if (!games.length) {
+        col.appendChild(el("p", { class:"pill bad" }, "No hay juegos cargados para esta ronda."));
+        return col;
+      }
+
+      // Build matchups
+      if (round === "WC") {
+        for (const g of games) {
+          const { home, away } = wcMatchTeams(g);
+          const locked = isLocked(g.kickoff_at);
+          col.appendChild(matchCard({
+            title: `WC #${g.game_no} (${g.home_seed} vs ${g.away_seed})`,
+            kickoffAt: g.kickoff_at,
+            teamA: home,
+            teamB: away,
+            selectedTeamId: state.picksByGame[g.id] || null,
+            locked,
+            onPick: async (team) => {
+              if (!state.entry) return toast("Primero crea tu entrada.");
+              // Changing WC affects downstream
+              const prev = state.picksByGame[g.id] || null;
+              try {
+                if (prev && prev !== team.id) await clearDownstream(conf, "WC");
+                await upsertPick(g.id, team.id);
+              } catch (e) {
+                toast(e.message || "Error guardando pick");
+              }
+            }
+          }));
+        }
+      }
+
+      if (round === "DIV") {
+        const matchups = computeDivisionalMatchups(conf);
+        if (!matchups) {
+          col.appendChild(el("p", { class:"muted small" }, "Primero elige ganadores de los 3 juegos de Wild Card para calcular reseeding."));
+          return col;
+        }
+
+        // We have 2 DIV games stored; we map matchup 1->game_no 1, matchup 2->game_no 2
+        for (const g of games) {
+          const mu = matchups.find(m => m.matchupNo === g.game_no);
+          const locked = isLocked(g.kickoff_at);
+          col.appendChild(matchCard({
+            title: `DIV #${g.game_no} (reseeding)`,
+            kickoffAt: g.kickoff_at,
+            teamA: mu?.home?.team || null,
+            teamB: mu?.away?.team || null,
+            selectedTeamId: state.picksByGame[g.id] || null,
+            locked,
+            onPick: async (team) => {
+              if (!state.entry) return toast("Primero crea tu entrada.");
+              const prev = state.picksByGame[g.id] || null;
+              try {
+                if (prev && prev !== team.id) await clearDownstream(conf, "DIV");
+                await upsertPick(g.id, team.id);
+              } catch (e) {
+                toast(e.message || "Error guardando pick");
+              }
+            }
+          }));
+        }
+      }
+
+      if (round === "CONF") {
+        const g = games[0];
+        const locked = isLocked(g.kickoff_at);
+        const divW = divisionalWinners(conf);
+        if (divW.length < 2) {
+          col.appendChild(el("p", { class:"muted small" }, "Primero elige ganadores de Divisional para definir este juego."));
+          return col;
+        }
+
+        col.appendChild(matchCard({
+          title: `CONF (${conf})`,
+          kickoffAt: g.kickoff_at,
+          teamA: divW[0],
+          teamB: divW[1],
+          selectedTeamId: state.picksByGame[g.id] || null,
+          locked,
+          onPick: async (team) => {
+            if (!state.entry) return toast("Primero crea tu entrada.");
+            const prev = state.picksByGame[g.id] || null;
+            try {
+              if (prev && prev !== team.id) await clearDownstream(conf, "CONF");
+              await upsertPick(g.id, team.id);
+            } catch (e) {
+              toast(e.message || "Error guardando pick");
+            }
+          }
+        }));
+      }
+
+      return col;
+    }
+
+    function superBowlColumn() {
+      const col = el("div", { class:"card" }, [
+        el("h2", {}, "Super Bowl"),
+      ]);
+
+      const g = sbGame();
+      if (!g) {
+        col.appendChild(el("p", { class:"pill bad" }, "No hay juego SB cargado."));
+        return col;
+      }
+
+      const locked = isLocked(g.kickoff_at);
+      const afcW = conferenceWinner("AFC");
+      const nfcW = conferenceWinner("NFC");
+
+      if (!afcW || !nfcW) {
+        col.appendChild(el("p", { class:"muted small" }, "Primero elige campeones de conferencia (AFC y NFC) para definir el Super Bowl."));
+        return col;
+      }
+
+      col.appendChild(matchCard({
+        title: "SB",
+        kickoffAt: g.kickoff_at,
+        teamA: afcW,
+        teamB: nfcW,
+        selectedTeamId: state.picksByGame[g.id] || null,
+        locked,
+        onPick: async (team) => {
+          if (!state.entry) return toast("Primero crea tu entrada.");
+          try {
+            await upsertPick(g.id, team.id);
+          } catch (e) {
+            toast(e.message || "Error guardando pick");
+          }
+        }
+      }));
+
+      col.appendChild(el("div", { class:"divider" }));
+      col.appendChild(el("p", { class:"small muted" }, "Tip anti-copia: puedes ocultar picks de otros hasta que cierre cada ronda usando RLS."));
+
+      return col;
+    }
+
+    function playView() {
+      if (!state.currentPool) return el("div", { class:"card" }, "No hay pool abierto.");
+
+      const missingSeeds =
+        !state.seeds ||
+        Object.keys(state.seeds.AFC || {}).length < 7 ||
+        Object.keys(state.seeds.NFC || {}).length < 7;
+
+      const wcCount = state.games.filter(g => g.round === "WC").length;
+      const divCount = state.games.filter(g => g.round === "DIV").length;
+      const confCount = state.games.filter(g => g.round === "CONF").length;
+      const sbCount = state.games.filter(g => g.round === "SB").length;
+
+      const statusCard = el("div", { class:"card" }, [
+        el("h2", {}, "Estado del bracket"),
+        el("p", {}, [
+          el("span", {}, "Pool: "),
+          el("strong", {}, state.currentPool.name),
+          el("span", { class:"muted small" }, ` · id: ${state.currentPool.id}`)
+        ]),
+        missingSeeds
+          ? el("p", { class:"pill bad" }, "Faltan seeds (1..7 AFC/NFC). El admin debe cargarlos.")
+          : el("p", { class:"pill ok" }, "Seeds OK (AFC/NFC)."),
+        (wcCount===6 && divCount===4 && confCount===2 && sbCount===1)
+          ? el("p", { class:"pill ok" }, "Juegos OK (13/13).")
+          : el("p", { class:"pill bad" }, `Juegos incompletos: WC=${wcCount}, DIV=${divCount}, CONF=${confCount}, SB=${sbCount}.`),
+        el("p", { class:"muted small" }, "Si algo está en rojo, ve a Admin y carga lo faltante en Supabase.")
+      ]);
+
+      const bracket = el("div", { class:"colsBracket" }, [
+        bracketColumn("AFC", "WC"),
+        bracketColumn("AFC", "DIV"),
+        bracketColumn("AFC", "CONF"),
+        el("div", { class:"card" }, [
+          el("h2", {}, "NFC — Wild Card"),
+          el("p", { class:"muted small" }, "Desplázate: abajo están Divisional/Conference NFC y el Super Bowl."),
+        ]),
+      ]);
+
+      const bracket2 = el("div", { class:"colsBracket" }, [
+        bracketColumn("NFC", "WC"),
+        bracketColumn("NFC", "DIV"),
+        bracketColumn("NFC", "CONF"),
+        superBowlColumn(),
+      ]);
+
+      return el("div", { class:"grid cols-2" }, [
+        statusCard,
+        entryCard(),
+        el("div", { class:"card", style:"grid-column: 1 / -1;" }, [
+          el("h2", {}, "Bracket"),
+          el("p", { class:"muted small" }, "El sistema calcula reseeding en Divisional según tus ganadores de Wild Card."),
+          el("div", { class:"divider" }),
+          bracket,
+          el("div", { class:"divider" }),
+          bracket2,
+        ])
+      ]);
+    }
+
+    function appShell() {
+      const app = el("div", {}, [
+        nav(),
+        state.view === "pools" ? poolsView()
+          : state.view === "admin" ? adminView()
+          : playView()
+      ]);
+      return app;
+    }
+
+    /***********************************************************************
+     * OPEN POOL
+     **********************************************************************/
+    async function openPool(poolId) {
+      const p = state.pools.find(x => x.id === poolId);
+      if (!p) return toast("Pool no encontrado.");
+      state.currentPool = p;
+
+      await loadSeedsAndTeams();
+      await loadGames();
+      await loadEntry(poolId);
+      await loadPicks(state.entry?.id);
+
+      state.view = "play";
+      toast("Pool abierto.");
+      render();
+    }
+
+    /***********************************************************************
+     * INIT + RENDER LOOP
+     **********************************************************************/
+    async function refreshAll() {
+      state.user = await getUser();
+      renderUserBox();
+
+      if (!state.user) return;
+
+      await loadPools();
+
+      // if there is a currentPool, refresh its data too
+      if (state.currentPool) {
+        await loadSeedsAndTeams();
+        await loadGames();
+        await loadEntry(state.currentPool.id);
+        await loadPicks(state.entry?.id);
+
+        // refresh pool object from server (admin_user_id etc)
+        const { data, error } = await supabase.from("pools").select("*").eq("id", state.currentPool.id).single();
+        if (!error) state.currentPool = data;
+      }
+    }
+
+    function render() {
+      renderUserBox();
+      const root = $("#app");
+      root.innerHTML = "";
+
+      if (!state.user) {
+        root.appendChild(loginView());
+        return;
+      }
+
+      root.appendChild(appShell());
+    }
+
+    async function init() {
+      // Auth changes
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        state.user = session?.user || null;
+        if (!state.user) {
+          state.view = "pools";
+          state.currentPool = null;
+          state.entry = null;
+          state.picksByGame = {};
+        }
+        await refreshAll();
+        render();
+      });
+
+      await refreshAll();
+      render();
+    }
+
+    init().catch(e => {
+      console.error(e);
+      toast(e.message || "Error inicializando");
+    });
+  </script>
 </body>
 </html>
